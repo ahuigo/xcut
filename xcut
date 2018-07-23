@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+import click
+from functools import reduce
+import sys
+import csv
+import re
+
+
+@click.command()
+@click.option('-f', '--fields', default = None, help='Select fields')
+@click.option('-d', '--delimiter', default=',', help='Set delimiter, `,` is default delimiter')
+@click.option('--titles', default=None, help='Set all titles')
+@click.option('-t', '-tt', default='head', help='Set title type: head, index, kv')
+@click.option('--no-title', is_flag=True, help='Do not print title')
+@click.option('-od', '--out-delimiter', default=',', help='Set output delimiter')
+@click.option('--tab', default=10, help='Set tab length')
+@click.option('--pretty', is_flag=True, help='Human pretty print')
+@click.argument('file', default=sys.stdin, type=click.File('r'))
+def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, tab):
+    """
+$ xcut [OPTIONS] FILE
+$ cat test.csv | xcut [OPTIONS] -f <fields> 
+
+$ cat test.csv | xcut -f job,name \n
+job,name\n
+coder,Jack\n
+artist,Lucy\n
+
+
+$ xcut -f job,name -od $'\\t' test.csv\n
+job       name\n
+--------------------\n
+coder     Jack\n
+artist    Lucy\n
+
+$ cat test.csv\n
+name,gender,job\n
+Jack,male,coder\n
+Lucy,female,artist\n
+
+$ echo 'Jack,male,coder' | xcut -f 'job,name' -t 'name,gender,job'\n
+$ echo 'Jack||male||coder' | xcut -f 'job,name' -t 'name,gender,job' -d '||'\n
+$ echo 'name=Jack,gender=male,job=coder' | xcut -f 'job,name'\n
+    """
+    if fields is None:
+        quit(f'For help:\n xcut --help')
+
+    out_delimiter = out_delimiter[0]
+    rows = csv.reader(file, delimiter=delimiter)
+    fields = fields.split(',')
+    if tt == 'index':
+        indexes = []
+        for i in fields:
+            if i.isdigit():
+                indexes.append(int(i)-1)
+            elif re.fullmatch(r'\d+-\d+', i):
+                start, end = [int(i)-1 for i in i.split('-')]
+                if end - start<100:
+                    indexes += list(range(start, end+1))
+    elif tt == 'kv':
+        pass
+    else:
+        if titles:
+            titles = titles.split(',')
+        else:
+            titles = next(rows)
+        indexes = [titles.index(f) if f in titles else None for f in fields]
+
+
+    # print titles and pretty '----'
+    if not no_title:
+        print(out_delimiter.join(fields).expandtabs(tab))
+        if pretty:
+            print('-'*tab*len(fields))
+
+    # csv.writer(sys.stdout, delimiter =',',quotechar ='"',quoting=csv.QUOTE_MINIMAL)
+    writer = csv.writer(sys.stdout, delimiter=out_delimiter,
+                        quotechar=',', quoting=csv.QUOTE_MINIMAL)
+    for row in rows:
+        if tt != 'kv':
+            # log format: val1,val2,val3....
+            #data = dict(zip(titles, row))
+            data = ['' if i is None else (
+                row[i:i+1] or [''])[0] for i in indexes]
+        else:
+            # log format: key1=val1,key2=val2,key3=val3....
+            data = {}
+            for item in row:
+                k, v = item.split('=', 1)
+                k = k.strip()
+                if k in fields:
+                    data[k] = v
+            data = [data.get(k, '') for k in fields]
+        if pretty:
+            line = out_delimiter.join(data).expandtabs(tab)
+            print(line)
+        else:
+            writer.writerow(data)
+
+if __name__ == '__main__':
+    xcut()
