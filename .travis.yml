@@ -8,6 +8,7 @@ install:
   - pip install coveralls
   - printf '%s' $'a'
   - echo $'\ta'
+  - echo 'from subprocess import getoutput as sh; print(sh("echo $'\''\ta'\''"))'| python -
   - python t.py
 
 script:
