@@ -3,6 +3,7 @@ Xcut is an Enhanced cut command, which is used to help grep column.
 
 [![](https://img.shields.io/pypi/pyversions/xcut.svg?longCache=True)](https://pypi.org/pypi/xcut/)
 [![](https://img.shields.io/pypi/v/xcut.svg?maxAge=36000)](https://pypi.org/pypi/xcut/)
+![](https://travis-ci.org/ahuigo/xcut.svg?branch=master)
 
 ## Install
 

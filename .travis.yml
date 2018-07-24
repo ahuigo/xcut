@@ -7,6 +7,8 @@ install:
   - pip install -q -r requirements-dev.txt .
   - pip install coveralls
   - printf '%s' $'a'
+  - echo $'\ta'
+  - python t.py
 
 script:
   - coverage run --source "$(basename "$PWD")" setup.py test
