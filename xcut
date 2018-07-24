@@ -42,7 +42,6 @@ Lucy,female,artist\n
     if fields is None:
         quit(f'For help:\n xcut --help')
 
-    out_delimiter = out_delimiter[0]
     rows = csv.reader(file, delimiter=delimiter)
     fields = fields.split(',')
     if tt == 'index':
@@ -54,7 +53,7 @@ Lucy,female,artist\n
                 start, end = [int(i)-1 for i in i.split('-')]
                 if end - start < 100:
                     indexes += list(range(start, end+1))
-        fields = [str(i) for i in indexes]
+        fields = [str(i+1) for i in indexes]
     elif tt == 'kv':
         pass
     else:
@@ -63,6 +62,11 @@ Lucy,female,artist\n
         else:
             titles = next(rows)
         indexes = [titles.index(f) if f in titles else None for f in fields]
+
+    # csv.writer
+    lineterminator = '\r\n' if dos else '\n'
+    writer = csv.writer(sys.stdout, delimiter=out_delimiter[0],
+                        quotechar=',', quoting=csv.QUOTE_MINIMAL, lineterminator=lineterminator)
 
     # print titles and pretty '----'
     if not no_title:
@@ -73,10 +77,6 @@ Lucy,female,artist\n
         if pretty:
             print('-'*tab*len(fields))
 
-    # csv.writer(sys.stdout, delimiter =',',quotechar ='"',quoting=csv.QUOTE_MINIMAL)
-    lineterminator = '\r\n' if dos else '\n'
-    writer = csv.writer(sys.stdout, delimiter=out_delimiter,
-                        quotechar=',', quoting=csv.QUOTE_MINIMAL, lineterminator=lineterminator)
     for row in rows:
         if tt != 'kv':
             # log format: val1,val2,val3....
@@ -92,11 +92,8 @@ Lucy,female,artist\n
                 if k in fields:
                     data[k] = v
             data = [data.get(k, '') for k in fields]
-        if pretty:
-            if tab:
-                line = out_delimiter.join(data).expandtabs(tab)
-            else:
-                line = out_delimiter.join(data)
+        if tab:
+            line = out_delimiter.join(data).expandtabs(tab)
             print(line)
         else:
             writer.writerow(data)
