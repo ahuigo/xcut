@@ -10,6 +10,13 @@ Xcut is an Enhanced cut command, which is used to help grep column.
     pip3 install xcut
 
 ## Usage
+Let's test a file named `test.csv`
+
+    > ~ cat test/test.csv
+    name,gender,job
+    Jack,male,coder
+    Lucy,female,artist
+
 Cut fields
 
     > ~ xcut -f job,name test/test.csv
@@ -17,20 +24,20 @@ Cut fields
     coder,Jack
     artist,Lucy
 
-### set title type
-The default title type is head: 
+### Set title type
+The default title type is head: `-t head` 
 
-    > ~ xcut -f name,gender -tt head test/test.csv
+    > ~ xcut -f name,gender test/test.csv
 
-Set title type as index:
+Set title type to index: `-t index`
 
-    > ~ xcut -f 1,3 -tt index  test/test.csv
+    > ~ xcut -f 1,3 -t index  test/test.csv
     1,3
     name,job
     Jack,coder
     Lucy,artist
 
-Set title type as custom( you could pass custom titles via `--titles`)
+Set title type to custom(`--titles TITLES`)
 
     > ~ xcut -f '职业,姓名' --titles '姓名,性别,职业' test/test.csv -od $'\t'
     职业 姓名
@@ -38,7 +45,13 @@ Set title type as custom( you could pass custom titles via `--titles`)
     coder	Jack
     artist	Lucy
 
-### set input delimiter(d)
+Set title type to kv(`-t kv`)
+
+    > ~ echo 'key1=v1,key2=v2,key3=v3' | xcut -f key3,key2 -t kv
+    key3,key2
+    v3,v2
+
+### Set input delimiter(d)
 
     > ~ xcut -f job,name test/test.csv -d ',' -od '`'
     job`name
@@ -52,7 +65,7 @@ Set title type as custom( you could pass custom titles via `--titles`)
     coder`Jack
     artist`Lucy
 
-### output pretty
+### pretty output 
 You could set the output delimiter(od), also you can print it via `pretty`
 
     > ~ xcut -f '职业,姓名' --titles '姓名,性别,职业' test/test.csv -od $'\t' --tab 20 --pretty
@@ -61,7 +74,6 @@ You could set the output delimiter(od), also you can print it via `pretty`
     job                 name
     coder               Jack
     artist              Lucy
-
 
 ## Required
 1. python>=3.5

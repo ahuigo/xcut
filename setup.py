@@ -3,11 +3,10 @@ setup for pypi package
 '''
 from setuptools import setup
 
-version = "0.0.2"
 
 setup(
     name='xcut',
-    version=version,
+    version='0.0.5',
     python_requires='>=3.6.1',
 
     packages=[],
@@ -28,6 +27,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python',
     ],
 
 )

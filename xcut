@@ -7,16 +7,17 @@ import re
 
 
 @click.command()
-@click.option('-f', '--fields', default = None, help='Select fields')
+@click.option('-f', '--fields', default=None, help='Select fields')
 @click.option('-d', '--delimiter', default=',', help='Set delimiter, `,` is default delimiter')
 @click.option('--titles', default=None, help='Set all titles')
+@click.option('--dos', is_flag=True, help="Use dos's newline")
 @click.option('-t', '-tt', default='head', help='Set title type: head, index, kv')
 @click.option('--no-title', is_flag=True, help='Do not print title')
 @click.option('-od', '--out-delimiter', default=',', help='Set output delimiter')
-@click.option('--tab', default=10, help='Set tab length')
+@click.option('--tab', default=None, help='Set tab length')
 @click.option('--pretty', is_flag=True, help='Human pretty print')
 @click.argument('file', default=sys.stdin, type=click.File('r'))
-def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, tab):
+def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, tab, dos):
     """
 $ xcut [OPTIONS] FILE
 $ cat test.csv | xcut [OPTIONS] -f <fields> 
@@ -37,10 +38,6 @@ $ cat test.csv\n
 name,gender,job\n
 Jack,male,coder\n
 Lucy,female,artist\n
-
-$ echo 'Jack,male,coder' | xcut -f 'job,name' -t 'name,gender,job'\n
-$ echo 'Jack||male||coder' | xcut -f 'job,name' -t 'name,gender,job' -d '||'\n
-$ echo 'name=Jack,gender=male,job=coder' | xcut -f 'job,name'\n
     """
     if fields is None:
         quit(f'For help:\n xcut --help')
@@ -55,8 +52,9 @@ $ echo 'name=Jack,gender=male,job=coder' | xcut -f 'job,name'\n
                 indexes.append(int(i)-1)
             elif re.fullmatch(r'\d+-\d+', i):
                 start, end = [int(i)-1 for i in i.split('-')]
-                if end - start<100:
+                if end - start < 100:
                     indexes += list(range(start, end+1))
+        fields = [str(i) for i in indexes]
     elif tt == 'kv':
         pass
     else:
@@ -66,16 +64,19 @@ $ echo 'name=Jack,gender=male,job=coder' | xcut -f 'job,name'\n
             titles = next(rows)
         indexes = [titles.index(f) if f in titles else None for f in fields]
 
-
     # print titles and pretty '----'
     if not no_title:
-        print(out_delimiter.join(fields).expandtabs(tab))
+        if tab:
+            print(out_delimiter.join(fields).expandtabs(tab))
+        else:
+            print(out_delimiter.join(fields))
         if pretty:
             print('-'*tab*len(fields))
 
     # csv.writer(sys.stdout, delimiter =',',quotechar ='"',quoting=csv.QUOTE_MINIMAL)
+    lineterminator = '\r\n' if dos else '\n'
     writer = csv.writer(sys.stdout, delimiter=out_delimiter,
-                        quotechar=',', quoting=csv.QUOTE_MINIMAL)
+                        quotechar=',', quoting=csv.QUOTE_MINIMAL, lineterminator=lineterminator)
     for row in rows:
         if tt != 'kv':
             # log format: val1,val2,val3....
@@ -92,10 +93,14 @@ $ echo 'name=Jack,gender=male,job=coder' | xcut -f 'job,name'\n
                     data[k] = v
             data = [data.get(k, '') for k in fields]
         if pretty:
-            line = out_delimiter.join(data).expandtabs(tab)
+            if tab:
+                line = out_delimiter.join(data).expandtabs(tab)
+            else:
+                line = out_delimiter.join(data)
             print(line)
         else:
             writer.writerow(data)
+
 
 if __name__ == '__main__':
     xcut()
