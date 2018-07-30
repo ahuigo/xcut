@@ -14,7 +14,7 @@ script:
   - coverage run --source "$(basename "$PWD")" setup.py test
 
 after_success:
-  - coveralls
+  - echo success
 
 notifications:
   email: false
