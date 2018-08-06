@@ -22,12 +22,14 @@ class PyTest(TestCommand):
 
 setup(
     name='xcut',
-    version='0.0.7',
+    version='0.0.8',
     python_requires='>=3.6.1',
 
     packages=[],
     # py_modules=['xcut'], # single module
-    install_requires=[],
+    install_requires=[
+        'click',
+        ],
     scripts=['xcut'],
 
     tests_require=['pytest'],

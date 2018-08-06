@@ -9,6 +9,8 @@ Xcut is an Enhanced cut command, which is used to help grep column.
     pip install xcut
     pip3 install xcut
 
+    xcut --help
+
 ## Usage
 Let's test a file named `test.csv`
 
@@ -68,12 +70,30 @@ Set title type to kv(`-t kv`)
 ### pretty output 
 You could set the output delimiter(od), also you can print it via `pretty`
 
-    > ~ xcut -f '职业,姓名' --titles '姓名,性别,职业' test/test.csv -od $'\t' --tab 20 --pretty
+    > ~ xcut -f '职业,姓名' --titles '姓名,性别,职业' test/test.csv -od $'\t\t' --pretty
     职业                  姓名
     ----------------------------------------
     job                 name
     coder               Jack
     artist              Lucy
 
+### Use csv format
+Not only you could  parse csv format file with `--from-csv`:
+
+    $ echo 'Lucy,"98,99",23' | python xcut -f scores,name --titles name,scores,age
+    scores,name
+    "98,Lucy
+
+    $ echo 'Lucy,"98,99",23' | python xcut -f scores,name --titles name,scores,age --from-csv
+    scores,name
+    98,99,Lucy
+
+You could also save the output to csv format  with(`--to-csv`)
+
+    $ echo 'Lucy,"98,99",23' | python xcut -f scores,name --titles name,scores,age --from-csv --to-csv
+    scores,name
+    "98,99",Lucy
+
 ## Required
 1. python>=3.5
+2. click

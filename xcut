@@ -6,18 +6,24 @@ import csv
 import re
 
 
+def rowsReader(file, delimiter):
+    for line in file:
+        row = line.strip().split(delimiter)
+        yield row
+
+
 @click.command()
 @click.option('-f', '--fields', default=None, help='Select fields')
 @click.option('-d', '--delimiter', default=',', help='Set delimiter, `,` is default delimiter')
 @click.option('--titles', default=None, help='Set all titles')
-@click.option('--dos', is_flag=True, help="Use dos's newline")
+@click.option('--from-csv', is_flag=True, help="Use csv parser")
+@click.option('--to-csv', is_flag=True, help="Output with csv format")
 @click.option('-t', '-tt', default='head', help='Set title type: head, index, kv')
 @click.option('--no-title', is_flag=True, help='Do not print title')
 @click.option('-od', '--out-delimiter', default=',', help='Set output delimiter')
-@click.option('--tab', default=None, help='Set tab length')
 @click.option('--pretty', is_flag=True, help='Human pretty print')
 @click.argument('file', default=sys.stdin, type=click.File('r'))
-def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, tab, dos):
+def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, from_csv, to_csv):
     """
 $ xcut [OPTIONS] FILE
 $ cat test.csv | xcut [OPTIONS] -f <fields> 
@@ -42,7 +48,11 @@ Lucy,female,artist\n
     if fields is None:
         quit(f'For help:\n xcut --help')
 
-    rows = csv.reader(file, delimiter=delimiter)
+    tab = 8
+    if from_csv:
+        rows = csv.reader(file, delimiter=delimiter)
+    else:
+        rows = rowsReader(file, delimiter=delimiter)
     fields = fields.split(',')
     if tt == 'index':
         indexes = []
@@ -63,17 +73,13 @@ Lucy,female,artist\n
             titles = next(rows)
         indexes = [titles.index(f) if f in titles else None for f in fields]
 
-    # csv.writer
-    lineterminator = '\r\n' if dos else '\n'
-    writer = csv.writer(sys.stdout, delimiter=out_delimiter[0],
-                        quotechar=',', quoting=csv.QUOTE_MINIMAL, lineterminator=lineterminator)
+    if to_csv:
+        writer = csv.writer(sys.stdout, delimiter=out_delimiter[0],
+                            quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
 
     # print titles and pretty '----'
     if not no_title:
-        if tab:
-            print(out_delimiter.join(fields).expandtabs(tab))
-        else:
-            print(out_delimiter.join(fields))
+        print(out_delimiter.join(fields))
         if pretty:
             print('-'*tab*len(fields))
 
@@ -87,16 +93,18 @@ Lucy,female,artist\n
             # log format: key1=val1,key2=val2,key3=val3....
             data = {}
             for item in row:
+                if not '=' in item:
+                    continue
                 k, v = item.split('=', 1)
                 k = k.strip()
                 if k in fields:
                     data[k] = v
             data = [data.get(k, '') for k in fields]
-        if tab:
-            line = out_delimiter.join(data).expandtabs(tab)
-            print(line)
-        else:
+        if to_csv:
             writer.writerow(data)
+        else:
+            line = out_delimiter.join(data)  # .expandtabs(tab)
+            print(line)
 
 
 if __name__ == '__main__':
