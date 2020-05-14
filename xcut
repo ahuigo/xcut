@@ -2,7 +2,7 @@
 import click
 from functools import reduce
 import sys
-import csv
+import csv,json
 import re
 
 
@@ -12,49 +12,68 @@ def rowsReader(file, delimiter):
         yield row
 
 
+def jsonReader(file):
+    for line in file:
+        row = line.strip()
+        yield json.loads(row)
+
+
+
+help_text = """
+Example: 
+
+$ cat test.csv
+name,gender,job
+Jack,male,coder
+Lucy,female,artist
+
+$ cat test.csv | xcut -f job,name 
+job,name
+coder,Jack
+artist,Lucy
+
+$ xcut -f job,name -od $'\\t' test.csv
+job       name
+--------------------
+coder     Jack
+artist    Lucy
+    """
+
+
 @click.command()
 @click.option('-f', '--fields', default=None, help='Select fields')
 @click.option('-d', '--delimiter', default=',', help='Set delimiter, `,` is default delimiter')
 @click.option('--titles', default=None, help='Set all titles')
-@click.option('--from-csv', is_flag=True, help="Use csv parser")
+@click.option('--from-format', default='csv', help="Use csv parser")
 @click.option('--to-csv', is_flag=True, help="Output with csv format")
-@click.option('-t', '-tt', default='head', help='Set title type: head, index, kv')
+@click.option('-t', '--tt', default='head', help='Set title type: head, index, kv')
+@click.option('-h', '--help',  is_flag=True, help='help')
 @click.option('--no-title', is_flag=True, help='Do not print title')
 @click.option('-od', '--out-delimiter', default=',', help='Set output delimiter')
 @click.option('--pretty', is_flag=True, help='Human pretty print')
 @click.argument('file', default=sys.stdin, type=click.File('r'))
-def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, from_csv, to_csv):
-    """
-$ xcut [OPTIONS] FILE
-$ cat test.csv | xcut [OPTIONS] -f <fields> 
-
-$ cat test.csv | xcut -f job,name \n
-job,name\n
-coder,Jack\n
-artist,Lucy\n
-
-
-$ xcut -f job,name -od $'\\t' test.csv\n
-job       name\n
---------------------\n
-coder     Jack\n
-artist    Lucy\n
-
-$ cat test.csv\n
-name,gender,job\n
-Jack,male,coder\n
-Lucy,female,artist\n
-    """
+def xcut(file, tt, no_title, pretty, delimiter, out_delimiter, fields, titles, from_format, to_csv, help):
+    f'''
+    {help_text}
+    '''
+    if help:
+        ctx = click.get_current_context()
+        print(ctx.get_help())
+        quit(help_text)
     if fields is None:
         quit(f'For help:\n xcut --help')
 
     tab = 8
-    if from_csv:
+    if from_format == 'csv': # index
         rows = csv.reader(file, delimiter=delimiter)
-    else:
+    elif from_format == 'json': # kvjson
+        rows = jsonReader(file)
+    else: # kvEqual: k=v
         rows = rowsReader(file, delimiter=delimiter)
     fields = fields.split(',')
-    if tt == 'index':
+    if from_format ==  'json':
+        tt = 'json'
+    if tt == 'index': # -f 1,2,3
         indexes = []
         for i in fields:
             if i.isdigit():
@@ -64,9 +83,9 @@ Lucy,female,artist\n
                 if end - start < 100:
                     indexes += list(range(start, end+1))
         fields = [str(i+1) for i in indexes]
-    elif tt == 'kv':
+    elif tt == 'kv': # -f:k1,k2 k1=v1,k2=v2
         pass
-    else:
+    elif tt == "head": # -f: name,age,gender
         if titles:
             titles = titles.split(',')
         else:
@@ -84,12 +103,15 @@ Lucy,female,artist\n
             print('-'*tab*len(fields))
 
     for row in rows:
-        if tt != 'kv':
+        if tt == 'json': # kv
+            # log format: key1=val1,key2=val2,key3=val3....
+            data = [row.get(k, '') for k in fields]
+        elif tt in ['index','head']: #head+indexes
             # log format: val1,val2,val3....
             #data = dict(zip(titles, row))
             data = ['' if i is None else (
                 row[i:i+1] or [''])[0] for i in indexes]
-        else:
+        elif tt == 'kv': # kv
             # log format: key1=val1,key2=val2,key3=val3....
             data = {}
             for item in row:
@@ -100,6 +122,8 @@ Lucy,female,artist\n
                 if k in fields:
                     data[k] = v
             data = [data.get(k, '') for k in fields]
+        else:
+            quit(f'bad tt={tt}')
         if to_csv:
             writer.writerow(data)
         else:

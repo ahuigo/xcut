@@ -22,7 +22,7 @@ class PyTest(TestCommand):
 
 setup(
     name='xcut',
-    version='0.0.10',
+    version = open('version').read().strip(),
     python_requires='>=3.6.1',
 
     packages=[],
